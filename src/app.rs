@@ -10,6 +10,8 @@ pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
 
+    let classic_game = |number_of_pairs| move || view! {<ClassicGame number_of_pairs/>};
+
     view! {
         // injects a stylesheet into the document <head>
         // id=leptos means cargo-leptos will hot-reload this stylesheet
@@ -29,7 +31,9 @@ pub fn App() -> impl IntoView {
             <main>
                 <Routes>
                     <Route path="" view=HomePage/>
-                    <Route path="/game" view=GamePage/>
+                    <Route path="/classic" view=ClassicPage/>
+                    <Route path="/classic/2x3" view=classic_game(3)/>
+                    <Route path="/classic/2x4" view=classic_game(4)/>
                 </Routes>
             </main>
         </Router>
@@ -41,8 +45,57 @@ pub fn App() -> impl IntoView {
 fn HomePage() -> impl IntoView {
     view! {
         <div class="column">
-            <A href="/game" class="button">Start Game</A>
+            <A href="/classic" class="button">Classic</A>
         </div>
+    }
+}
+
+#[component]
+fn ClassicPage() -> impl IntoView {
+    view! {
+        <div class="column">
+            <A href="/classic/2x3" class="button">2x3</A>
+            <A href="/classic/2x4" class="button">2x4</A>
+        </div>
+    }
+}
+
+#[component]
+fn ClassicGame(number_of_pairs: u8) -> impl IntoView {
+    let number_of_pairs = number_of_pairs as usize;
+    let available_pairs = [
+        Pair {
+            matches: ["A".into(), "A".into()],
+        },
+        Pair {
+            matches: ["B".into(), "B".into()],
+        },
+        Pair {
+            matches: ["C".into(), "C".into()],
+        },
+        Pair {
+            matches: ["D".into(), "D".into()],
+        },
+        Pair {
+            matches: ["E".into(), "E".into()],
+        },
+        Pair {
+            matches: ["F".into(), "F".into()],
+        },
+    ];
+
+    let mut pairs = Vec::new();
+    while pairs.len() < number_of_pairs.into() {
+        pairs.extend(
+            available_pairs
+                .iter()
+                .take(number_of_pairs - pairs.len())
+                .cloned(),
+        );
+    }
+
+    view! {
+        <Game options=pairs.into()/>
     }
 }
 
@@ -61,12 +114,12 @@ fn GamePage() -> impl IntoView {
         Pair {
             matches: ["D".into(), "D".into()],
         },
-        // Pair {
-        //     matches: ["E".into(), "E".into()],
-        // },
-        // Pair {
-        //     matches: ["F".into(), "F".into()],
-        // },
+        Pair {
+            matches: ["E".into(), "E".into()],
+        },
+        Pair {
+            matches: ["F".into(), "F".into()],
+        },
     ]
     .into();
 
