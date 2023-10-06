@@ -21,6 +21,12 @@ h1 {
 	box-sizing: inherit;
 }
 
+.column {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
 .board {
 	--aspect-ratio: 1/1.4142;
 	--width: 5rem;

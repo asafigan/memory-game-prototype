@@ -25,11 +25,11 @@ pub fn App() -> impl IntoView {
             view! {
                 <ErrorTemplate outside_errors/>
             }
-            .into_view()
         }>
             <main>
                 <Routes>
                     <Route path="" view=HomePage/>
+                    <Route path="/game" view=GamePage/>
                 </Routes>
             </main>
         </Router>
@@ -39,7 +39,16 @@ pub fn App() -> impl IntoView {
 /// Renders the home page of your application.
 #[component]
 fn HomePage() -> impl IntoView {
-    let options = vec![
+    view! {
+        <div class="column">
+            <A href="/game" class="button">Start Game</A>
+        </div>
+    }
+}
+
+#[component]
+fn GamePage() -> impl IntoView {
+    let options = [
         Pair {
             matches: ["A".into(), "A".into()],
         },
@@ -79,7 +88,7 @@ fn Game(options: Pairs) -> impl IntoView {
 
     view! {
         <h1>"Game"</h1>
-        <Show when=move || !pairs().is_empty() fallback=|| view!{}>
+        <Show when=move || !pairs().is_empty() fallback=|| ()>
             <GameMatch pairs=pairs() restart=start.clone()/>
         </Show>
     }
@@ -169,11 +178,9 @@ where
         })
         .collect_view();
 
-    let fallback = || view! {};
-
     view! {
         <div class="board">{cards}</div>
-        <Show when=win fallback=fallback>
+        <Show when=win fallback=|| ()>
             <WinScreen restart=restart.clone()/>
         </Show>
     }
@@ -206,7 +213,7 @@ where
     let show = move || state() != CardState::Hidden;
     view! {
         <div on:click=move |_| select() class="card" class:flipped=flipped class:success=success class:fail=fail>
-            <Show when=show fallback=|| view!{}>
+            <Show when=show fallback=|| ()>
                 <div class="front">{item.to_string()}</div>
                 <div class="back"></div>
             </Show>
