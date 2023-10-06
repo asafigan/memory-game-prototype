@@ -39,53 +39,66 @@ pub fn App() -> impl IntoView {
 /// Renders the home page of your application.
 #[component]
 fn HomePage() -> impl IntoView {
-    let (pairs, set_pairs) = create_signal(Vec::new());
+    let options = vec![
+        Pair {
+            matches: ["A".into(), "A".into()],
+        },
+        Pair {
+            matches: ["B".into(), "B".into()],
+        },
+        Pair {
+            matches: ["C".into(), "C".into()],
+        },
+        Pair {
+            matches: ["D".into(), "D".into()],
+        },
+        // Pair {
+        //     matches: ["E".into(), "E".into()],
+        // },
+        // Pair {
+        //     matches: ["F".into(), "F".into()],
+        // },
+    ]
+    .into();
+
+    view! {
+        <Game options/>
+    }
+}
+
+type Pairs = Rc<[Pair]>;
+
+#[component]
+fn Game(options: Pairs) -> impl IntoView {
+    let (pairs, set_pairs) = create_signal([].into());
     let start = move || {
-        set_pairs(vec![
-            Pair {
-                matches: ["A".into(), "A".into()],
-            },
-            Pair {
-                matches: ["B".into(), "B".into()],
-            },
-            Pair {
-                matches: ["C".into(), "C".into()],
-            },
-            Pair {
-                matches: ["D".into(), "D".into()],
-            },
-            // Pair {
-            //     matches: ["E".into(), "E".into()],
-            // },
-            // Pair {
-            //     matches: ["F".into(), "F".into()],
-            // },
-        ]);
+        set_pairs(options.clone());
     };
-    create_effect(move |_| start());
+    let start_up = start.clone();
+    create_effect(move |_| start_up());
 
     view! {
         <h1>"Game"</h1>
         <Show when=move || !pairs().is_empty() fallback=|| view!{}>
-            <Game pairs=pairs() restart=start/>
+            <GameMatch pairs=pairs() restart=start.clone()/>
         </Show>
     }
 }
 
 #[component]
-fn Game<Restart>(pairs: Vec<Pair>, restart: Restart) -> impl IntoView
+fn GameMatch<Restart>(pairs: Pairs, restart: Restart) -> impl IntoView
 where
-    Restart: Fn() + Copy + 'static,
+    Restart: Fn() + Clone + 'static,
 {
     let mut cards: Vec<_> = pairs
         .into_iter()
-        .flat_map(|x| x.matches)
+        .flat_map(|x| &x.matches)
         .enumerate()
         .map(|(id, item)| {
             let (state, set_state) = create_signal(CardState::default());
             CardData {
                 id,
-                item,
+                item: item.clone(),
                 state,
                 set_state,
             }
@@ -161,7 +174,7 @@ where
     view! {
         <div class="board">{cards}</div>
         <Show when=win fallback=fallback>
-            <WinScreen restart/>
+            <WinScreen restart=restart.clone()/>
         </Show>
     }
 }
@@ -191,10 +204,9 @@ where
     let success = move || state() == CardState::Success;
     let fail = move || state() == CardState::Failure;
     let show = move || state() != CardState::Hidden;
-    let fallback = move || view! { <br/> };
     view! {
-        <div on:click={move |_| select()} class="card" class:flipped=flipped class:success=success class:fail=fail>
-            <Show when=show fallback=fallback>
+        <div on:click=move |_| select() class="card" class:flipped=flipped class:success=success class:fail=fail>
+            <Show when=show fallback=|| view!{}>
                 <div class="front">{item.to_string()}</div>
                 <div class="back"></div>
             </Show>
