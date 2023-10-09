@@ -27,6 +27,7 @@ http = "0.2.8"
 fastrand = { version = "2", features = ["js"]}
 
 [features]
+csr = ["leptos/csr", "leptos_meta/csr", "leptos_router/csr"]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
 ssr = [
     "dep:axum",

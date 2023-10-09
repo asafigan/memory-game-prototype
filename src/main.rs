@@ -40,4 +40,10 @@ pub fn main() {
     // no client-side main function
     // unless we want this to work with e.g., Trunk for a purely client-side app
     // see lib.rs for hydration function instead
+    use leptos::*;
+    use memory_game_prototype::app::*;
+    _ = console_log::init_with_level(log::Level::Debug);
+    console_error_panic_hook::set_once();
+
+    mount_to_body(App)
 }
