@@ -27,8 +27,27 @@ h1 {
 	align-items: center;
 }
 
+.links {
+	max-width: 900px;
+	margin: 0 auto;
+	padding: 5em 2em;
+}
+
+.rows {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+}
+
 .gap {
 	gap: 1rem;
+}
+
+.frame {
+	height: calc(100vh - 2em);
+	padding: 2em 1em;
 }
 
 .board {
@@ -41,7 +60,7 @@ h1 {
 	gap: var(--gap);
 	justify-content: center;
 	align-content: center;
-	height: 80vh;
+	height: 100%;
 }
 
 .card {
@@ -121,6 +140,7 @@ h1 {
 	cursor: pointer;
 	border-radius: 1rem;
 	padding: 1rem;
+	text-align: center;
 }
 
 .button:hover {

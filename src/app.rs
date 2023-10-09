@@ -2,7 +2,6 @@ use crate::error_template::{AppError, ErrorTemplate};
 use leptos::{html::Div, *};
 use leptos_meta::*;
 use leptos_router::*;
-use log::debug;
 
 use std::{rc::Rc, time::Duration};
 
@@ -66,7 +65,7 @@ fn ClassicPage() -> impl IntoView {
         .map(|x| view! { <A href={x.to_string()} class="button">2x{x.to_string()}</A>})
         .collect_view();
     view! {
-        <div class="column gap">{links}</div>
+        <div class="links rows gap">{links}</div>
     }
 }
 
@@ -172,7 +171,6 @@ fn Game(options: Pairs) -> impl IntoView {
     create_effect(move |_| start_up());
 
     view! {
-        <h1>"Game"</h1>
         <Show when=move || !pairs().is_empty() fallback=|| ()>
             <GameMatch pairs=pairs() restart=start.clone()/>
         </Show>
@@ -315,14 +313,17 @@ where
     };
 
     view! {
-        <div
-            node_ref=board_ref
-            class="board"
-            style=("--gap", format!("{}px",gap))
-            style=("--aspect-ratio", card_aspect_ratio)
-            style=("--width", move || format!("{}px", width()))
-        >
-            {cards}
+        <div class="frame">
+            <div
+                node_ref=board_ref
+                class="board"
+                style:font-size=move || format!("{}px", width() / 2.0)
+                style=("--gap", format!("{}px",gap))
+                style=("--aspect-ratio", card_aspect_ratio)
+                style=("--width", move || format!("{}px", width()))
+            >
+                {cards}
+            </div>
         </div>
         <Show when=win fallback=|| ()>
             <WinScreen restart=restart.clone()/>
