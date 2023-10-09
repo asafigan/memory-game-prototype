@@ -413,8 +413,10 @@ where
         <div class="shim">
             <div class="popup">
                 <h2>"🎉 You win! 🎉"</h2>
-                <div class="button" on:click=move |_| restart()>"Play Again"</div>
-                <A class="button" href="/">"Home"</A>
+                <div class="column gap">
+                    <div class="button" on:click=move |_| restart()>"Play Again"</div>
+                    <A class="button" href="/">"Home"</A>
+                </div>
             </div>
         </div>
     }
