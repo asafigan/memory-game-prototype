@@ -274,38 +274,42 @@ where
             set_board_size(Some((board.offset_width(), board.offset_height())));
         }
     });
+    let handle = window_event_listener(ev::resize, move |_| {
+        if let Some(board) = board_ref.get_untracked() {
+            set_board_size(Some((board.offset_width(), board.offset_height())));
+        }
+    });
+    on_cleanup(move || handle.remove());
 
     let board_aspect_ratio =
         move || board_size().map(|(width, height)| width as f32 / height as f32);
 
     let card_aspect_ratio = 1.4142;
     let gap = 20;
-    let columns = create_memo(move |_| {
+    let columns = move || {
         board_aspect_ratio()
-            .map(|x| {
-                debug!("{x}");
-                num_columns(card_aspect_ratio, number_of_cards, x)
-            })
+            .map(|x| num_columns(card_aspect_ratio, number_of_cards, x))
             .unwrap_or(1)
-    });
+    };
 
     let width = move || {
         board_size()
             .map(|(width, height)| {
                 let card_width = (width as f32 - (gap * (columns() - 1)) as f32) / columns() as f32;
+                let card_width = (card_width - 0.5).floor();
 
                 let card_height = card_width / card_aspect_ratio;
                 let mut rows = number_of_cards / columns();
                 if number_of_cards % columns() != 0 {
                     rows += 1;
                 }
-                let full_height = card_height * rows as f32 + (gap * rows - 1) as f32;
+                let full_height = card_height * rows as f32 + (gap * (rows - 1)) as f32;
                 if full_height < height as f32 {
                     return card_width;
                 }
 
                 let card_height = (height as f32 - (gap * (rows - 1)) as f32) / rows as f32;
-                card_height * card_aspect_ratio
+                (card_height - 0.5).floor() * card_aspect_ratio
             })
             .unwrap_or(100.0)
     };
@@ -329,10 +333,8 @@ where
 // aspect ratio is width/height.
 fn num_columns(card_aspect_ratio: f32, number_of_cards: usize, board_aspect_ratio: f32) -> usize {
     let mut best_aspect_ratio = aspect_ratio_of_layout(card_aspect_ratio, number_of_cards, 1);
-    debug!("{}", best_aspect_ratio);
     for columns in 2.. {
         let aspect_ratio = aspect_ratio_of_layout(card_aspect_ratio, number_of_cards, columns);
-        debug!("{}", aspect_ratio);
         if (board_aspect_ratio - best_aspect_ratio).abs()
             < (board_aspect_ratio - aspect_ratio).abs()
         {
@@ -352,8 +354,6 @@ fn aspect_ratio_of_layout(card_aspect_ratio: f32, number_of_cards: usize, column
 
     let width = columns as f32;
     let height = rows as f32 / card_aspect_ratio;
-
-    debug!("{columns} * {rows}");
 
     width / height
 }
