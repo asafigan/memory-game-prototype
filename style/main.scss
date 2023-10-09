@@ -27,23 +27,30 @@ h1 {
 	align-items: center;
 }
 
+.gap {
+	gap: 1rem;
+}
+
 .board {
-	--aspect-ratio: 1/1.4142;
-	--width: 5rem;
-	padding: 1rem;
-	display: grid;
-	grid-template-columns: repeat(4, var(--width));
-	grid-gap: 1rem;
+	--aspect-ratio: 1;
+	--width: 5px;
+	--gap: 10px;
+	display: flex;
+	flex-wrap: wrap;
+	flex-direction: row;
+	gap: var(--gap);
 	justify-content: center;
 	align-content: center;
+	height: 80vh;
 }
 
 .card {
 	perspective: 500px;
 	--rotation: 0turn;
 	position: relative;
-	height: calc(var(--width) * var(--aspect-ratio));
-	width: 100%;
+	height: calc(var(--width) / var(--aspect-ratio));
+	width: var(--width);
+	flex: none;
 }
 
 .front, .back {

@@ -1,7 +1,8 @@
 use crate::error_template::{AppError, ErrorTemplate};
-use leptos::*;
+use leptos::{html::Div, *};
 use leptos_meta::*;
 use leptos_router::*;
+use log::debug;
 
 use std::{rc::Rc, time::Duration};
 
@@ -9,8 +10,6 @@ use std::{rc::Rc, time::Duration};
 pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
-
-    let classic_game = |number_of_pairs| move || view! {<ClassicGame number_of_pairs/>};
 
     view! {
         // injects a stylesheet into the document <head>
@@ -21,42 +20,75 @@ pub fn App() -> impl IntoView {
         <Title text="Welcome to Leptos"/>
 
         // content for this welcome page
-        <Router fallback=|| {
-            let mut outside_errors = Errors::default();
-            outside_errors.insert_with_default_key(AppError::NotFound);
-            view! {
-                <ErrorTemplate outside_errors/>
-            }
-        }>
+        <Router fallback=|| view! {<ErrorPage/>}>
             <main>
                 <Routes>
                     <Route path="" view=HomePage/>
-                    <Route path="/classic" view=ClassicPage/>
-                    <Route path="/classic/2x3" view=classic_game(3)/>
-                    <Route path="/classic/2x4" view=classic_game(4)/>
+                    <ClassicRoutes/>
                 </Routes>
             </main>
         </Router>
     }
 }
 
-/// Renders the home page of your application.
+#[component]
+fn ErrorPage() -> impl IntoView {
+    let mut outside_errors = Errors::default();
+    outside_errors.insert_with_default_key(AppError::NotFound);
+    view! {
+        <ErrorTemplate outside_errors/>
+    }
+}
+
 #[component]
 fn HomePage() -> impl IntoView {
     view! {
-        <div class="column">
+        <div class="column gap">
             <A href="/classic" class="button">Classic</A>
         </div>
     }
 }
 
+#[component(transparent)]
+fn ClassicRoutes() -> impl IntoView {
+    let passthrough = || view! {<Outlet/>};
+    view! {
+        <Route path="classic" view=passthrough>
+            <Route path="" view=ClassicPage/>
+            <Route path=":size" view=ClassicGamePage/>
+        </Route>
+    }
+}
+
 #[component]
 fn ClassicPage() -> impl IntoView {
+    let links = (3..=20)
+        .map(|x| view! { <A href={x.to_string()} class="button">2x{x.to_string()}</A>})
+        .collect_view();
     view! {
-        <div class="column">
-            <A href="/classic/2x3" class="button">2x3</A>
-            <A href="/classic/2x4" class="button">2x4</A>
-        </div>
+        <div class="column gap">{links}</div>
+    }
+}
+
+#[derive(Params, PartialEq, Eq, Clone, Copy)]
+struct ClassicGameParams {
+    size: u8,
+}
+
+#[component]
+fn ClassicGamePage() -> impl IntoView {
+    let params = use_params::<ClassicGameParams>();
+    let game = move || {
+        params().map(|params| {
+            view! {
+                <ClassicGame number_of_pairs=params.size/>
+            }
+        })
+    };
+    view! {
+        <ErrorBoundary fallback=|_| view!{<ErrorPage/>}>
+          {game}
+        </ErrorBoundary>
     }
 }
 
@@ -167,13 +199,16 @@ where
         })
         .collect();
     fastrand::shuffle(&mut cards);
+    let number_of_cards = cards.len();
     let (cards_left, set_cards_left) = create_signal(cards.len());
     let (win, set_win) = create_signal(false);
+
     create_effect(move |_| {
         if cards_left() == 0 {
             set_timeout(move || set_win(true), Duration::from_secs(1));
         }
     });
+
     let (_, set_selected) = create_signal(Vec::<CardData>::new());
     let cards = cards
         .into_iter()
@@ -231,12 +266,96 @@ where
         })
         .collect_view();
 
+    let board_ref = create_node_ref::<Div>();
+    let (board_size, set_board_size) = create_signal(None);
+
+    create_effect(move |_| {
+        if let Some(board) = board_ref.get_untracked() {
+            set_board_size(Some((board.offset_width(), board.offset_height())));
+        }
+    });
+
+    let board_aspect_ratio =
+        move || board_size().map(|(width, height)| width as f32 / height as f32);
+
+    let card_aspect_ratio = 1.4142;
+    let gap = 20;
+    let columns = create_memo(move |_| {
+        board_aspect_ratio()
+            .map(|x| {
+                debug!("{x}");
+                num_columns(card_aspect_ratio, number_of_cards, x)
+            })
+            .unwrap_or(1)
+    });
+
+    let width = move || {
+        board_size()
+            .map(|(width, height)| {
+                let card_width = (width as f32 - (gap * (columns() - 1)) as f32) / columns() as f32;
+
+                let card_height = card_width / card_aspect_ratio;
+                let mut rows = number_of_cards / columns();
+                if number_of_cards % columns() != 0 {
+                    rows += 1;
+                }
+                let full_height = card_height * rows as f32 + (gap * rows - 1) as f32;
+                if full_height < height as f32 {
+                    return card_width;
+                }
+
+                let card_height = (height as f32 - (gap * (rows - 1)) as f32) / rows as f32;
+                card_height * card_aspect_ratio
+            })
+            .unwrap_or(100.0)
+    };
+
     view! {
-        <div class="board">{cards}</div>
+        <div
+            node_ref=board_ref
+            class="board"
+            style=("--gap", format!("{}px",gap))
+            style=("--aspect-ratio", card_aspect_ratio)
+            style=("--width", move || format!("{}px", width()))
+        >
+            {cards}
+        </div>
         <Show when=win fallback=|| ()>
             <WinScreen restart=restart.clone()/>
         </Show>
     }
+}
+
+// aspect ratio is width/height.
+fn num_columns(card_aspect_ratio: f32, number_of_cards: usize, board_aspect_ratio: f32) -> usize {
+    let mut best_aspect_ratio = aspect_ratio_of_layout(card_aspect_ratio, number_of_cards, 1);
+    debug!("{}", best_aspect_ratio);
+    for columns in 2.. {
+        let aspect_ratio = aspect_ratio_of_layout(card_aspect_ratio, number_of_cards, columns);
+        debug!("{}", aspect_ratio);
+        if (board_aspect_ratio - best_aspect_ratio).abs()
+            < (board_aspect_ratio - aspect_ratio).abs()
+        {
+            return columns - 1;
+        }
+        best_aspect_ratio = aspect_ratio;
+    }
+
+    return 1;
+}
+
+fn aspect_ratio_of_layout(card_aspect_ratio: f32, number_of_cards: usize, columns: usize) -> f32 {
+    let mut rows = number_of_cards / columns;
+    if number_of_cards % columns != 0 {
+        rows += 1;
+    }
+
+    let width = columns as f32;
+    let height = rows as f32 / card_aspect_ratio;
+
+    debug!("{columns} * {rows}");
+
+    width / height
 }
 
 #[derive(Clone)]
