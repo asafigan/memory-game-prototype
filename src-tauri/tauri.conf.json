@@ -1,7 +1,7 @@
 {
   "build": {
-    "beforeDevCommand": "trunk serve --features csr",
     "beforeBuildCommand": "trunk build --features csr",
+    "beforeDevCommand": "trunk serve --features csr",
     "devPath": "http://localhost:1420",
     "distDir": "../dist",
     "withGlobalTauri": true
@@ -10,25 +10,19 @@
     "productName": "tauri-app",
     "version": "0.0.0"
   },
+  "plugins": {},
   "tauri": {
-    "allowlist": {
-      "all": false,
-      "shell": {
-        "all": false,
-        "open": true
-      }
-    },
     "bundle": {
       "active": true,
-      "targets": "all",
-      "identifier": "com.tauri.dev",
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",
         "icons/128x128@2x.png",
         "icons/icon.icns",
         "icons/icon.ico"
-      ]
+      ],
+      "identifier": "com.tauri.dev",
+      "targets": "all"
     },
     "security": {
       "csp": null
@@ -36,10 +30,10 @@
     "windows": [
       {
         "fullscreen": false,
+        "height": 600,
         "resizable": true,
         "title": "tauri-app",
-        "width": 800,
-        "height": 600
+        "width": 800
       }
     ]
   }

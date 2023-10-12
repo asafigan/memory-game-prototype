@@ -348,10 +348,7 @@ fn num_columns(card_aspect_ratio: f32, number_of_cards: usize, board_aspect_rati
 }
 
 fn aspect_ratio_of_layout(card_aspect_ratio: f32, number_of_cards: usize, columns: usize) -> f32 {
-    let mut rows = number_of_cards / columns;
-    if number_of_cards % columns != 0 {
-        rows += 1;
-    }
+    let rows = number_of_cards.div_ceil(columns);
 
     let width = columns as f32;
     let height = rows as f32 / card_aspect_ratio;
