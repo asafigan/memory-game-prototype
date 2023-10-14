@@ -1,7 +1,11 @@
 use crate::error_template::{AppError, ErrorTemplate};
-use leptos::{html::Div, *};
+use leptos::{
+    html::{Audio, Div},
+    *,
+};
 use leptos_meta::*;
 use leptos_router::*;
+use log::debug;
 
 use std::{rc::Rc, time::Duration};
 
@@ -10,6 +14,20 @@ pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
 
+    let click_audio_ref = create_node_ref();
+    let error_click_audio_ref = create_node_ref();
+    let success_click_audio_ref = create_node_ref();
+
+    let audio_sources = move || {
+        Some(AudioSources {
+            click: click_audio_ref.get()?,
+            success_click: success_click_audio_ref.get()?,
+            error_click: error_click_audio_ref.get()?,
+        })
+    };
+
+    provide_context(audio_sources.into_signal());
+
     view! {
         // injects a stylesheet into the document <head>
         // id=leptos means cargo-leptos will hot-reload this stylesheet
@@ -17,6 +35,23 @@ pub fn App() -> impl IntoView {
 
         // sets the document title
         <Title text="Welcome to Leptos"/>
+
+        // sound effects
+        <audio
+            preload
+            node_ref=click_audio_ref
+            src="/sounds/default-click.wav"
+        />
+        <audio
+            preload
+            node_ref=error_click_audio_ref
+            src="/sounds/error-click.wav"
+        />
+        <audio
+            preload
+            node_ref=success_click_audio_ref
+            src="/sounds/success-click.wav"
+        />
 
         // content for this welcome page
         <Router fallback=|| view! {<ErrorPage/>}>
@@ -27,6 +62,29 @@ pub fn App() -> impl IntoView {
                 </Routes>
             </main>
         </Router>
+    }
+}
+
+struct AudioSources {
+    click: HtmlElement<Audio>,
+    success_click: HtmlElement<Audio>,
+    error_click: HtmlElement<Audio>,
+}
+
+trait PlayAudio {
+    fn play(&self, f: impl Fn(&AudioSources) -> &HtmlElement<Audio>);
+}
+
+impl PlayAudio for Signal<Option<AudioSources>> {
+    fn play(&self, f: impl Fn(&AudioSources) -> &HtmlElement<Audio>) {
+        self.with(|sources| {
+            if let Some(sources) = sources {
+                let audio = f(sources);
+                audio.set_volume(0.2);
+                audio.set_current_time(0.0);
+                let _ = audio.play();
+            }
+        });
     }
 }
 
@@ -207,6 +265,7 @@ where
         }
     });
 
+    let audio_sources = expect_context::<Signal<Option<AudioSources>>>();
     let (_, set_selected) = create_signal(Vec::<CardData>::new());
     let cards = cards
         .into_iter()
@@ -240,8 +299,10 @@ where
                                 set_cards_left.update(|left| {
                                     *left -= selected.len() + 1;
                                 });
+                                audio_sources.play(|a| &a.success_click);
                                 CardState::Success
                             } else {
+                                audio_sources.play(|a| &a.error_click);
                                 CardState::Failure
                             };
 
@@ -252,6 +313,7 @@ where
                     } else {
                         card_copy.set_state.set(CardState::Selected);
                         selected.push(card_copy.clone());
+                        audio_sources.play(|a| &a.click);
                     }
                 });
             };
